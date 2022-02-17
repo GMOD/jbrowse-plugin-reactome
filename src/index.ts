@@ -4,20 +4,20 @@ import ViewType from '@jbrowse/core/pluggableElementTypes/ViewType'
 import { AbstractSessionModel, isAbstractMenuManager } from '@jbrowse/core/util'
 import { version } from '../package.json'
 import {
-  ReactComponent as HelloViewReactComponent,
-  stateModel as helloViewStateModel,
-} from './HelloView'
-
-export default class TemplatePlugin extends Plugin {
-  name = 'TemplatePlugin'
+  ReactComponent as ReactomeViewReactComponent,
+  stateModel as reactomeViewStateModel,
+} from './ReactomeView'
+import ShowChartIcon from '@material-ui/icons/ShowChart'
+export default class ReactomePlugin extends Plugin {
+  name = 'ReactomePlugin'
   version = version
 
   install(pluginManager: PluginManager) {
     pluginManager.addViewType(() => {
       return new ViewType({
-        name: 'HelloView',
-        stateModel: helloViewStateModel,
-        ReactComponent: HelloViewReactComponent,
+        name: 'ReactomeView',
+        stateModel: reactomeViewStateModel,
+        ReactComponent: ReactomeViewReactComponent,
       })
     })
   }
@@ -25,9 +25,13 @@ export default class TemplatePlugin extends Plugin {
   configure(pluginManager: PluginManager) {
     if (isAbstractMenuManager(pluginManager.rootModel)) {
       pluginManager.rootModel.appendToMenu('Add', {
-        label: 'Hello View',
+        label: 'Reactome View',
+        icon: ShowChartIcon,
         onClick: (session: AbstractSessionModel) => {
-          session.addView('HelloView', {})
+          session.addView('ReactomeView', {})
+          const xView = session.views.length - 1
+          // @ts-ignore
+          session.views[xView].setDisplayName('Reactome View')
         },
       })
     }
