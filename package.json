@@ -1,5 +1,5 @@
 {
-  "version": "0.0.1",
+  "version": "1.0.0",
   "name": "jbrowse-plugin-reactome",
   "keywords": [
     "jbrowse",
@@ -117,5 +117,5 @@
     "ts-node": "^10.3.0",
     "typescript": "^4.1.3"
   },
-  "private": true
+  "private": false
 }
