@@ -102,31 +102,25 @@ async function handleOpen(setDiagram: any) {
 
 const ReactomeView = observer(({ model }: { model: any }) => {
   const inputRef = useRef()
-  const [pathwayDisplayMessage, setPathwayDisplayMessage] = useState(
-    'No pathways are currently displayed.',
-  )
   const [pathwayCount, setPathwayCount] = useState(
     model.pathways?.length ? model.pathways.length : 0,
   )
   const [diagram, setDiagram] = useState<any>()
-  const [reqGene, setReqGene] = useState<String>()
-  const [selectedLi, setSelectedLi] = useState<String>()
   const classes = useStyles()
 
   useEffect(() => {
     handleOpen(setDiagram)
   }, [])
 
-  const selectPathway = (id: any, gene: any) => {
+  useEffect(() => {
     if (diagram) {
-      diagram.loadDiagram(id)
-      diagram.flagItems(gene)
+      diagram.loadDiagram(model.selectedPathway)
     }
-  }
+  }, [model.selectedPathway])
 
   function renderRow(props: any) {
     const { index, style } = props
-    if (model.pathways[index]?.stId === selectedLi) {
+    if (model.pathways[index]?.stId === model.selectedPathway) {
       return (
         <ListItem
           button
@@ -134,8 +128,10 @@ const ReactomeView = observer(({ model }: { model: any }) => {
           className={classes.selectedLi}
           key={index}
           onClick={() => {
-            selectPathway(model.pathways[index]?.stId, reqGene)
-            setSelectedLi(model.pathways[index]?.stId)
+            model.setSelectedPathway(model.pathways[index]?.stId)
+            model.setMessage(
+              `Pathways relating to ${model.gene} are being displayed. "${model.pathways[index]?.name}" has been selected.`,
+            )
           }}
         >
           <ListItemText
@@ -152,8 +148,10 @@ const ReactomeView = observer(({ model }: { model: any }) => {
         className={classes.listItem}
         key={index}
         onClick={() => {
-          selectPathway(model.pathways[index]?.stId, reqGene)
-          setSelectedLi(model.pathways[index]?.stId)
+          model.setSelectedPathway(model.pathways[index]?.stId)
+          model.setMessage(
+            `Pathways relating to ${model.gene} are being displayed. "${model.pathways[index]?.name}" has been selected.`,
+          )
         }}
       >
         <ListItemText
@@ -167,7 +165,6 @@ const ReactomeView = observer(({ model }: { model: any }) => {
   const handleSubmit = async () => {
     // @ts-ignore
     const requestedGeneName = inputRef ? inputRef.current.value : undefined
-    setReqGene(requestedGeneName)
 
     if (requestedGeneName) {
       const pathways = await getPathways(requestedGeneName)
@@ -175,21 +172,19 @@ const ReactomeView = observer(({ model }: { model: any }) => {
       if (pathways?.length !== 0) {
         model.setPathways(pathways)
         setPathwayCount(model.pathways.length)
-        setPathwayDisplayMessage(
+        model.setGene(requestedGeneName)
+        model.setMessage(
           `Pathways relating to ${requestedGeneName} are being displayed. Click on the pathway name to display it in the Reactome Diagram viewer.`,
         )
-        selectPathway(model.pathways[0].stId, requestedGeneName)
+        model.setSelectedPathway(model.pathways[0].stId)
       } else {
         model.setPathways([])
         setPathwayCount(0)
-        setPathwayDisplayMessage(
+        model.setMessage(
           `No pathways could be retrieved for ${requestedGeneName}.`,
         )
       }
     }
-
-    // @ts-ignore
-    inputRef.current.value = null
   }
 
   const SearchButton = () => {
@@ -222,7 +217,7 @@ const ReactomeView = observer(({ model }: { model: any }) => {
           }}
         />
         <Alert severity="info" style={{ width: 1250 }}>
-          {pathwayDisplayMessage}
+          {model.message}
         </Alert>
         <Grid
           container
@@ -231,7 +226,7 @@ const ReactomeView = observer(({ model }: { model: any }) => {
           alignItems="center"
           style={{ gap: '5px', marginBottom: '8px' }}
         >
-          {pathwayCount ? (
+          {model.pathways ? (
             <FixedSizeList
               height={500}
               width={300}

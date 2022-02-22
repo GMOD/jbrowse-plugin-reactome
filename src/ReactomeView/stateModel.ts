@@ -4,6 +4,9 @@ const stateModel = types
   .model({
     type: types.literal('ReactomeView'),
     displayName: types.maybe(types.string),
+    selectedPathway: types.maybe(types.string),
+    gene: types.maybe(types.string),
+    message: 'No pathways are currently displayed.',
   })
   .volatile(() => ({
     pathways: undefined as unknown as object,
@@ -16,6 +19,15 @@ const stateModel = types
     },
     setPathways(pathways: any) {
       self.pathways = pathways
+    },
+    setSelectedPathway(str: string) {
+      self.selectedPathway = str
+    },
+    setGene(str: string) {
+      self.gene = str
+    },
+    setMessage(str: string) {
+      self.message = str
     },
   }))
 
