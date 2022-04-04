@@ -67,21 +67,25 @@ async function getPathways(geneName: string) {
   return pathways
 }
 
-function onReactomeDiagramReady() {
+function onReactomeDiagramReady(model: any) {
   // @ts-ignore
   var diagram = window.Reactome.Diagram.create({
-    placeHolder: 'diagramHolder',
+    placeHolder: `diagramHolder-${model.id}`,
     width: 950, // minimum recommended width
     height: 500,
     toHide: ['search'],
   })
 
-  diagram.loadDiagram('R-HSA-1266738')
+  if (model.getSelectedPathway()) {
+    diagram.loadDiagram(model.getSelectedPathway())
+  } else {
+    diagram.loadDiagram('R-HSA-1266738')
+  }
 
   return diagram
 }
 
-async function handleOpen(setDiagram: any) {
+async function handleOpen(setDiagram: any, model: any) {
   await domLoadScript(
     'https://dev.reactome.org/DiagramJs/diagram/diagram.nocache.js',
   )
@@ -97,7 +101,7 @@ async function handleOpen(setDiagram: any) {
     }, 100)
   })
 
-  setDiagram(onReactomeDiagramReady())
+  setDiagram(onReactomeDiagramReady(model))
 }
 
 const ReactomeView = observer(({ model }: { model: any }) => {
@@ -109,7 +113,7 @@ const ReactomeView = observer(({ model }: { model: any }) => {
   const classes = useStyles()
 
   useEffect(() => {
-    handleOpen(setDiagram)
+    handleOpen(setDiagram, model)
   }, [])
 
   useEffect(() => {
@@ -243,7 +247,7 @@ const ReactomeView = observer(({ model }: { model: any }) => {
               </Typography>
             </Box>
           )}
-          <div id="diagramHolder"></div>
+          <div id={`diagramHolder-${model.id}`}></div>
         </Grid>
       </Grid>
     </div>
