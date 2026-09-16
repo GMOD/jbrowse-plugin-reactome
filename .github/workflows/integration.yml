@@ -17,5 +17,8 @@ jobs:
           node-version: 20.x
           cache: 'pnpm'
       - run: pnpm install
+      # a pnpm store restored from cache skips puppeteer's postinstall, which is
+      # what downloads Chrome into ~/.cache/puppeteer
+      - run: pnpm exec puppeteer browsers install chrome
       - run: pnpm test
       - run: pnpm test:e2e
