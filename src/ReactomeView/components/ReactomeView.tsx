@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 import SearchIcon from '@mui/icons-material/Search'
 import {
@@ -34,13 +34,19 @@ const ReactomeView = observer(function ReactomeView({
 }) {
   const [gene, setGene] = useState(model.gene ?? '')
   const [diagram, setDiagram] = useState<ReactomeDiagram>()
+  const holder = useRef<HTMLDivElement>(null)
   const placeHolder = `diagramHolder-${model.id}`
   const { pathways, selectedPathway } = model
 
   useEffect(() => {
     let active = true
-    loadDiagramJs().then(
-      Reactome => {
+    loadDiagramJs()
+      .then(async Reactome => {
+        // DiagramJs finds its placeholder by id, and the view's body can still
+        // be outside the document when the script is ready: 5.0.0-beta.8 in CI
+        while (active && !holder.current?.isConnected) {
+          await new Promise(requestAnimationFrame)
+        }
         if (active) {
           setDiagram(
             Reactome.Diagram.create({
@@ -51,13 +57,12 @@ const ReactomeView = observer(function ReactomeView({
             }),
           )
         }
-      },
-      (error: unknown) => {
+      })
+      .catch((error: unknown) => {
         if (active) {
           model.setMessage(`The Reactome diagram viewer did not load: ${error}`)
         }
-      },
-    )
+      })
     return () => {
       active = false
     }
@@ -145,7 +150,7 @@ const ReactomeView = observer(function ReactomeView({
             </Typography>
           </Box>
         )}
-        <div id={placeHolder} />
+        <div id={placeHolder} ref={holder} />
       </Box>
     </Box>
   )

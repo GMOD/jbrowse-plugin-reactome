@@ -6,11 +6,17 @@ import ReactomeView from '../src/ReactomeView/components/ReactomeView'
 import stateModel from '../src/ReactomeView/stateModel'
 
 const loadDiagram = vi.fn()
+// DiagramJs refuses a placeholder id the document does not hold
+const create = vi.fn(({ placeHolder }: { placeHolder: string }) => {
+  if (!document.getElementById(placeHolder)) {
+    throw new Error(`invalid place holder ${placeHolder}`)
+  }
+  return { loadDiagram }
+})
 
 vi.mock('../src/ReactomeView/reactomeApi', async importOriginal => ({
   ...(await importOriginal<object>()),
-  loadDiagramJs: () =>
-    Promise.resolve({ Diagram: { create: () => ({ loadDiagram }) } }),
+  loadDiagramJs: () => Promise.resolve({ Diagram: { create } }),
 }))
 
 const hierarchy = [
@@ -26,6 +32,7 @@ const hierarchy = [
 
 beforeEach(() => {
   loadDiagram.mockClear()
+  create.mockClear()
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => new Response(JSON.stringify({ hierarchy }))),
@@ -73,4 +80,19 @@ it('says so when a gene has no pathways', async () => {
   expect(
     screen.getByText('There are no pathways to be displayed.'),
   ).toBeTruthy()
+})
+
+it('creates the diagram once its placeholder reaches the document', async () => {
+  const container = document.createElement('div')
+  const model = stateModel.create({ id: 'detached', type: 'ReactomeView' })
+  render(<ReactomeView model={model} />, { container })
+
+  await new Promise(resolve => setTimeout(resolve, 100))
+  expect(create).not.toHaveBeenCalled()
+
+  document.body.append(container)
+  await waitFor(() => {
+    expect(create).toHaveBeenCalled()
+  })
+  expect(model.message).toBe('No pathways are currently displayed.')
 })
