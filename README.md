@@ -1,4 +1,7 @@
-# jbrowse-plugin-reactome
+# jbrowse-plugin-reactome2
+
+Published as `jbrowse-plugin-reactome2`; `jbrowse-plugin-reactome` 1.0.1 on npm
+is the JBrowse 1.x-era build.
 
 > JBrowse 2 plugin for [Reactome](https://reactome.org/)
 
@@ -23,7 +26,7 @@ Check out
   "plugins": [
     {
       "name": "Reactome",
-      "url": "https://unpkg.com/jbrowse-plugin-reactome/dist/jbrowse-plugin-reactome.umd.production.min.js"
+      "url": "https://unpkg.com/jbrowse-plugin-reactome2/dist/jbrowse-plugin-reactome.umd.production.min.js"
     }
   ]
 }

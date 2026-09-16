@@ -1,6 +1,6 @@
 {
-  "name": "jbrowse-plugin-reactome",
-  "version": "1.0.1",
+  "name": "jbrowse-plugin-reactome2",
+  "version": "2.0.0",
   "description": "JBrowse 2 plugin to integrate resources from Reactome",
   "license": "Apache-2.0",
   "repository": "github:GMOD/jbrowse-plugin-reactome",
