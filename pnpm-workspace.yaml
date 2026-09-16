@@ -1,0 +1,10 @@
+allowBuilds:
+  esbuild: set this to true or false
+  puppeteer: set this to true or false
+  unrs-resolver: set this to true or false
+minimumReleaseAgeExclude:
+  - concurrently@10.0.3
+onlyBuiltDependencies:
+  - esbuild
+  - puppeteer
+  - unrs-resolver

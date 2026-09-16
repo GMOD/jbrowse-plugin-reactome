@@ -1,256 +1,153 @@
-import React, { useEffect, useState, useRef } from 'react'
-import { observer } from 'mobx-react'
-import domLoadScript from 'load-script2'
+import React, { useEffect, useState } from 'react'
+
+import SearchIcon from '@mui/icons-material/Search'
 import {
-  Grid,
-  ListItem,
+  Alert,
+  Box,
+  IconButton,
+  InputAdornment,
+  List,
+  ListItemButton,
   ListItemText,
   TextField,
-  IconButton,
-  Box,
   Typography,
-  makeStyles,
-} from '@material-ui/core'
-import { Alert } from '@material-ui/lab'
-import SearchIcon from '@material-ui/icons/Search'
-import { FixedSizeList } from 'react-window'
+} from '@mui/material'
+import { observer } from 'mobx-react'
 
-const useStyles = makeStyles(() => ({
-  pathwayDisplay: {
-    backgroundColor: '#f7f7f7',
-    border: '1px solid #ddd',
-  },
-  listItem: {
-    borderBottom: '1px solid #ccc',
-    borderRight: '1px solid #ccc',
-    padding: '8px 16px',
-  },
-  selectedLi: {
-    borderBottom: '1px solid #ccc',
-    borderRight: '1px solid #ccc',
-    padding: '8px 16px',
-    backgroundColor: 'e8e8e8',
-    boxShadow: 'inset -4px 0px 0px 0px green',
-  },
-}))
+import { getPathways, loadDiagramJs } from '../reactomeApi'
 
-async function fetchPathways(geneName: string) {
-  const response = await fetch(
-    `https://idg.reactome.org/idgpairwise/relationships/hierarchyForTerm/${geneName}`,
-    {
-      method: 'GET',
-    },
-  )
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${response.status} ${response.statusText}`)
-  }
-  return response.json()
+import type { ReactomeDiagram } from '../reactomeApi'
+import type { ReactomeViewModel } from '../stateModel'
+
+const listStyle = {
+  width: 300,
+  height: 500,
+  overflow: 'auto',
+  backgroundColor: '#f7f7f7',
+  border: '1px solid #ddd',
 }
 
-async function getPathways(geneName: string) {
-  const response = await fetchPathways(geneName)
-
-  let pathways: any = []
-
-  const recurse = (element: any) => {
-    pathways = [...pathways, { stId: element.stId, name: element.name }]
-
-    if (Array.isArray(element.children)) {
-      element.children.map((ele: any) => recurse(ele))
-    }
-  }
-
-  response.hierarchy.map((element: any) => {
-    return recurse(element)
-  })
-
-  return pathways
-}
-
-function onReactomeDiagramReady(model: any) {
-  // @ts-ignore
-  var diagram = window.Reactome.Diagram.create({
-    placeHolder: `diagramHolder-${model.id}`,
-    width: 950, // minimum recommended width
-    height: 500,
-    toHide: ['search'],
-  })
-
-  if (model.getSelectedPathway()) {
-    diagram.loadDiagram(model.getSelectedPathway())
-  } else {
-    diagram.loadDiagram('R-HSA-1266738')
-  }
-
-  return diagram
-}
-
-async function handleOpen(setDiagram: any, model: any) {
-  await domLoadScript(
-    'https://dev.reactome.org/DiagramJs/diagram/diagram.nocache.js',
-  )
-
-  await new Promise((resolve) => {
-    let checker = setInterval(() => {
-      // @ts-ignore
-      if (window.Reactome) {
-        clearInterval(checker)
-        // @ts-ignore
-        resolve(window.Reactome)
-      }
-    }, 100)
-  })
-
-  setDiagram(onReactomeDiagramReady(model))
-}
-
-const ReactomeView = observer(({ model }: { model: any }) => {
-  const inputRef = useRef()
-  const [pathwayCount, setPathwayCount] = useState(
-    model.pathways?.length ? model.pathways.length : 0,
-  )
-  const [diagram, setDiagram] = useState<any>()
-  const classes = useStyles()
+const ReactomeView = observer(function ReactomeView({
+  model,
+}: {
+  model: ReactomeViewModel
+}) {
+  const [gene, setGene] = useState(model.gene ?? '')
+  const [diagram, setDiagram] = useState<ReactomeDiagram>()
+  const placeHolder = `diagramHolder-${model.id}`
+  const { pathways, selectedPathway } = model
 
   useEffect(() => {
-    handleOpen(setDiagram, model)
-  }, [])
-
-  useEffect(() => {
-    if (diagram) {
-      diagram.loadDiagram(model.selectedPathway)
-    }
-  }, [model.selectedPathway])
-
-  function renderRow(props: any) {
-    const { index, style } = props
-    if (model.pathways[index]?.stId === model.selectedPathway) {
-      return (
-        <ListItem
-          button
-          style={style}
-          className={classes.selectedLi}
-          key={index}
-          onClick={() => {
-            model.setSelectedPathway(model.pathways[index]?.stId)
-            model.setMessage(
-              `Pathways relating to ${model.gene} are being displayed. "${model.pathways[index]?.name}" has been selected.`,
-            )
-          }}
-        >
-          <ListItemText
-            primary={model.pathways[index]?.stId}
-            secondary={model.pathways[index]?.name}
-          />
-        </ListItem>
-      )
-    }
-    return (
-      <ListItem
-        button
-        style={style}
-        className={classes.listItem}
-        key={index}
-        onClick={() => {
-          model.setSelectedPathway(model.pathways[index]?.stId)
-          model.setMessage(
-            `Pathways relating to ${model.gene} are being displayed. "${model.pathways[index]?.name}" has been selected.`,
+    let active = true
+    loadDiagramJs().then(
+      Reactome => {
+        if (active) {
+          setDiagram(
+            Reactome.Diagram.create({
+              placeHolder,
+              width: 950,
+              height: 500,
+              toHide: ['search'],
+            }),
           )
-        }}
-      >
-        <ListItemText
-          primary={model.pathways[index]?.stId}
-          secondary={model.pathways[index]?.name}
-        />
-      </ListItem>
+        }
+      },
+      (error: unknown) => {
+        if (active) {
+          model.setMessage(`The Reactome diagram viewer did not load: ${error}`)
+        }
+      },
     )
-  }
+    return () => {
+      active = false
+    }
+  }, [model, placeHolder])
 
-  const handleSubmit = async () => {
-    // @ts-ignore
-    const requestedGeneName = inputRef ? inputRef.current.value : undefined
+  useEffect(() => {
+    if (diagram && selectedPathway) {
+      diagram.loadDiagram(selectedPathway)
+    }
+  }, [diagram, selectedPathway])
 
-    if (requestedGeneName) {
-      const pathways = await getPathways(requestedGeneName)
-
-      if (pathways?.length !== 0) {
-        model.setPathways(pathways)
-        setPathwayCount(model.pathways.length)
-        model.setGene(requestedGeneName)
-        model.setMessage(
-          `Pathways relating to ${requestedGeneName} are being displayed. Click on the pathway name to display it in the Reactome Diagram viewer.`,
-        )
-        model.setSelectedPathway(model.pathways[0].stId)
-      } else {
-        model.setPathways([])
-        setPathwayCount(0)
-        model.setMessage(
-          `No pathways could be retrieved for ${requestedGeneName}.`,
-        )
+  async function search() {
+    const name = gene.trim()
+    if (name) {
+      try {
+        model.setSearchResult(name, await getPathways(name))
+      } catch (error) {
+        model.setMessage(`Could not retrieve pathways for ${name}: ${error}`)
       }
     }
-  }
-
-  const SearchButton = () => {
-    return (
-      <IconButton onClick={handleSubmit}>
-        <SearchIcon />
-      </IconButton>
-    )
   }
 
   return (
-    <div>
-      <Grid
-        container
-        direction="column"
-        justifyContent="center"
-        alignItems="center"
-        style={{ gap: '5px' }}
-      >
-        <TextField
-          fullWidth
-          color="primary"
-          variant="outlined"
-          label="Enter a gene name to retrieve associated pathways"
-          InputProps={{ endAdornment: <SearchButton /> }}
-          style={{ width: 625 }}
-          inputRef={inputRef}
-          onKeyPress={(e: any) => {
-            if (e.key === 'Enter') handleSubmit()
-          }}
-        />
-        <Alert severity="info" style={{ width: 1250 }}>
-          {model.message}
-        </Alert>
-        <Grid
-          container
-          direction="row"
-          justifyContent="center"
-          alignItems="center"
-          style={{ gap: '5px', marginBottom: '8px' }}
-        >
-          {model.pathways ? (
-            <FixedSizeList
-              height={500}
-              width={300}
-              itemSize={56}
-              itemCount={pathwayCount}
-              className={classes.pathwayDisplay}
-            >
-              {renderRow}
-            </FixedSizeList>
-          ) : (
-            <Box className={classes.pathwayDisplay} height={500} width={300}>
-              <Typography align="center">
-                There are no pathways to be displayed.
-              </Typography>
-            </Box>
-          )}
-          <div id={`diagramHolder-${model.id}`}></div>
-        </Grid>
-      </Grid>
-    </div>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1,
+        p: 1,
+      }}
+    >
+      <TextField
+        label="Enter a gene name to retrieve associated pathways"
+        value={gene}
+        onChange={event => {
+          setGene(event.target.value)
+        }}
+        onKeyDown={event => {
+          if (event.key === 'Enter') {
+            void search()
+          }
+        }}
+        sx={{ width: 625 }}
+        slotProps={{
+          input: {
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton aria-label="search" onClick={() => void search()}>
+                  <SearchIcon />
+                </IconButton>
+              </InputAdornment>
+            ),
+          },
+        }}
+      />
+      <Alert severity="info" sx={{ width: 1250, maxWidth: '100%' }}>
+        {model.message}
+      </Alert>
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        {pathways?.length ? (
+          <List disablePadding sx={listStyle}>
+            {pathways.map(pathway => (
+              <ListItemButton
+                key={pathway.stId}
+                selected={pathway.stId === selectedPathway}
+                onClick={() => {
+                  model.selectPathway(pathway)
+                }}
+                sx={{
+                  borderBottom: '1px solid #ccc',
+                  '&.Mui-selected': {
+                    boxShadow: 'inset -4px 0 0 0 green',
+                  },
+                }}
+              >
+                <ListItemText primary={pathway.stId} secondary={pathway.name} />
+              </ListItemButton>
+            ))}
+          </List>
+        ) : (
+          <Box sx={listStyle}>
+            <Typography align="center">
+              There are no pathways to be displayed.
+            </Typography>
+          </Box>
+        )}
+        <div id={placeHolder} />
+      </Box>
+    </Box>
   )
 })
 

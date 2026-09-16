@@ -1,35 +1,22 @@
 # jbrowse-plugin-reactome
 
-> JBrowse 2 plugin for Reactome ([Reactome](https://reactome.org/))
+> JBrowse 2 plugin for [Reactome](https://reactome.org/)
 
 ![](img/1.png)
+
+Adds a Reactome view (Add → Reactome view). Enter a gene name to list the
+Reactome pathways it takes part in; the most specific one opens in Reactome's
+diagram viewer, and clicking another pathway opens that one.
 
 ## Install
 
 ### For JBrowse Web and JBrowse Desktop
 
-Install the Reactome Plugin through the in-app plugin store. Need some help? Check out [the guide on how to use the plugin store here](https://jbrowse.org/jb2/docs/user_guide/#using-the-plugin-store).
+Install the Reactome plugin through the in-app plugin store. Need some help?
+Check out
+[the guide on how to use the plugin store](https://jbrowse.org/jb2/docs/user_guide/#using-the-plugin-store).
 
-## Usage
-
-### Development
-
-```
-git clone https://github.com/GMOD/jbrowse-plugin-reactome
-cd jbrowse-plugin-reactome
-yarn
-yarn start
-```
-
-Then (assuming JBrowse Web is running on port 3000) open JBrowse Web to the following:
-
-http://localhost:3000/?config=http://localhost:9200/config.json
-
-Need help getting JBrowse Web running? [Read the docs here](https://jbrowse.org/jb2/docs/quickstart_web).
-
-### Production
-
-Add to the "plugins" of your JBrowse Web config:
+### In a config
 
 ```json
 {
@@ -41,3 +28,31 @@ Add to the "plugins" of your JBrowse Web config:
   ]
 }
 ```
+
+## Development
+
+Requires [pnpm](https://pnpm.io/installation).
+
+```console
+pnpm install
+pnpm dev  # rollup watch + static file server on port 9000
+```
+
+Point JBrowse Web at
+`http://localhost:3000/?config=http://localhost:9000/config.json`.
+
+```console
+pnpm build     # tsc + rollup UMD bundle → dist/
+pnpm test      # unit tests (jsdom + React Testing Library)
+pnpm test:e2e  # puppeteer against nightly JBrowse (downloads on first run)
+```
+
+`TEST_JBROWSE_VERSION=<name>` runs the e2e test against `.test-jbrowse-<name>/`
+instead.
+
+## Known limitation
+
+Reactome's embeddable diagram viewer draws a high-level pathway (one with an
+illustrated overview, such as "Cell Cycle") blank and throws in the console,
+while reactome.org's own Pathway Browser draws it. Pathways further down the
+hierarchy draw normally, which is why a search selects the most specific one.

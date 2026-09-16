@@ -1,8 +1,0 @@
-{
-  "plugins": [
-    {
-      "name": "Reactome",
-      "url": "http://localhost:9200/dist/jbrowse-plugin-reactome.umd.development.js"
-    }
-  ]
-}
